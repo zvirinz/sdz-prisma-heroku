@@ -1,0 +1,130 @@
+// at this time we disable data-proxy feature.
+// we'll make heroku app work as expected. then add synth. seed db, AND switch to other tasks.
+// we'll add prisma cloud only IF need it
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["referentialIntegrity"]
+}
+
+datasource db {
+  provider             = "postgresql"
+  url                  = env("DATABASE_URL")
+  shadowDatabaseUrl    = env("SHADOW_DATABASE_URL")
+  referentialIntegrity = "prisma"
+}
+
+model Product {
+  id          String         @id @default(uuid())
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  slug        String         @unique
+  name        String
+  sku         String         @unique
+  description String?
+  quantity    Int
+  isAvailable Boolean
+  isDigital   Boolean
+  isOnsale    Boolean
+  isVisible   Boolean
+  category    Category?
+  brand       Brand?
+  images      ProductImage[]
+  sizes       Size[]
+  colors      Color[]
+  orders      Order[]
+  metadata    MetaData       @relation(fields: [metaDataId], references: [id])
+  brandId     Int
+  categoryId  Int
+  metaDataId  Int
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  name        String
+  description String?
+  imageId     String?
+  product     Product  @relation(fields: [productId], references: [id])
+  productId   String   @unique
+}
+
+model Brand {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  name        String
+  description String?
+  imageId     String?
+  product     Product  @relation(fields: [productId], references: [id])
+  productId   String   @unique
+}
+
+model Size {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  name      String
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String   @unique
+}
+
+model Color {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  hexCode   String
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String   @unique
+}
+
+model Order {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  userId    Int?
+  customer  User?     @relation(fields: [userId], references: [id])
+  products  Product[]
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  email     String   @unique
+  firstName String?
+  lastName  String?
+  address   String?
+  orders    Order[]
+}
+
+model ProductImage {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  name      String
+  imageUrl  String?
+  imageId   String?
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String   @unique
+}
+
+model MetaData {
+  id          Int       @id @default(autoincrement())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  title       String?
+  description String?
+  keywords    String[]
+  entity      Product[]
+}
+
+model OrderToProduct {
+  A String
+  B String
+
+  @@unique([A, B], map: "_OrderToProduct_AB_unique")
+  @@index([B], map: "_OrderToProduct_B_index")
+  @@map("_OrderToProduct")
+}
